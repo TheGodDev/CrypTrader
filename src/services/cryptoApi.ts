@@ -217,6 +217,7 @@ export async function fetchHistoricalCandles(
 
   if (source === 'coinbase') {
     try {
+      // Coinbase API returns up to 300 candles by default
       const url = `https://api.exchange.coinbase.com/products/${pair.id}/candles?granularity=${granularity}`;
       const res = await fetch(url, {
         headers: { 'User-Agent': 'CrypTrader/1.0' }
@@ -252,7 +253,7 @@ export async function fetchHistoricalCandles(
 
   try {
     const binanceInterval = BINANCE_INTERVALS[timeframe];
-    const url = `https://api.binance.us/api/v3/klines?symbol=${pair.binanceSymbol}&interval=${binanceInterval}&limit=120`;
+    const url = `https://api.binance.us/api/v3/klines?symbol=${pair.binanceSymbol}&interval=${binanceInterval}&limit=1000`;
     const res = await fetch(url);
     if (res.ok) {
       const data = await res.json();
@@ -272,7 +273,7 @@ export async function fetchHistoricalCandles(
     // Fallback
   }
 
-  return generateMockCandles(pair.price, 120, granularity);
+  return generateMockCandles(pair.price, 500, granularity);
 }
 
 export async function fetchAllTickers(pairs: CryptoPair[]): Promise<Partial<Record<string, { price: number; change24h: number; high24h: number; low24h: number; volume24h: number }>>> {

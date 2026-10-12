@@ -23,7 +23,7 @@ export const Header: React.FC = () => {
         {/* Brand title with strictly NO SPACES: CrypTrader */}
         <div className="logo-badge" onClick={() => setActivePair('BTC-USD')}>
           <div className="logo-icon-wrap">
-            <Zap size={18} color="#0a0d14" />
+            <Zap size={18} color="#000000" />
           </div>
           <div className="logo-title">
             CrypTrader
@@ -82,7 +82,7 @@ export const Header: React.FC = () => {
           onClick={() => setBackendEngine(backendEngine === 'fastapi' ? 'onnx' : 'fastapi')}
           title="Click to toggle between FastAPI Python Server and In-Browser ONNX Runtime"
         >
-          <Cpu size={14} className="text-cyan" />
+          <Cpu size={14} className="text-green" />
           <div>
             <div className="wallet-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <span className={`pulse-dot`} style={{ background: fastapiConnected ? 'var(--color-green)' : 'var(--color-cyan)', width: 5, height: 5 }} />
@@ -120,7 +120,7 @@ export const Header: React.FC = () => {
               }`
             }}
           >
-            <Sparkles size={12} className="text-cyan" />
+            <Sparkles size={12} className="text-green" />
             <span
               style={{
                 fontSize: 11,

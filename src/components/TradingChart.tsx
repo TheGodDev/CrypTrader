@@ -36,6 +36,8 @@ export const TradingChart: React.FC = () => {
   const smaSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const emaSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const mlSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const mlUpperBandRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const mlLowerBandRef = useRef<ISeriesApi<'Line'> | null>(null);
 
   const [hoveredCandle, setHoveredCandle] = useState<{
     time?: string;
@@ -61,37 +63,37 @@ export const TradingChart: React.FC = () => {
       width: container.clientWidth,
       height: container.clientHeight,
       layout: {
-        background: { type: ColorType.Solid, color: '#0a0d14' },
-        textColor: '#94a3b8',
+        background: { type: ColorType.Solid, color: '#000000' },
+        textColor: '#9ca3af',
         fontSize: 11,
         fontFamily: 'Inter, sans-serif'
       },
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.035)' },
-        horzLines: { color: 'rgba(255, 255, 255, 0.035)' }
+        vertLines: { color: 'rgba(16, 185, 129, 0.08)' },
+        horzLines: { color: 'rgba(16, 185, 129, 0.08)' }
       },
       crosshair: {
         mode: CrosshairMode.Normal,
         vertLine: {
-          color: 'rgba(0, 212, 255, 0.4)',
+          color: 'rgba(16, 185, 129, 0.5)',
           width: 1,
           style: LineStyle.Dashed
         },
         horzLine: {
-          color: 'rgba(0, 212, 255, 0.4)',
+          color: 'rgba(16, 185, 129, 0.5)',
           width: 1,
           style: LineStyle.Dashed
         }
       },
       rightPriceScale: {
-        borderColor: 'rgba(255, 255, 255, 0.08)',
+        borderColor: 'rgba(16, 185, 129, 0.2)',
         scaleMargins: {
           top: 0.12,
           bottom: 0.22
         }
       },
       timeScale: {
-        borderColor: 'rgba(255, 255, 255, 0.08)',
+        borderColor: 'rgba(16, 185, 129, 0.2)',
         timeVisible: true,
         secondsVisible: false
       }
@@ -130,7 +132,7 @@ export const TradingChart: React.FC = () => {
     smaSeriesRef.current = smaSeries;
 
     const emaSeries = chart.addSeries(LineSeries, {
-      color: '#00d4ff',
+      color: '#10b981',
       lineWidth: 1,
       priceLineVisible: false,
       lastValueVisible: false,
@@ -139,13 +141,33 @@ export const TradingChart: React.FC = () => {
     emaSeriesRef.current = emaSeries;
 
     const mlSeries = chart.addSeries(LineSeries, {
-      color: '#a78bfa',
+      color: '#10b981',
       lineWidth: 2,
       lineStyle: LineStyle.Dashed,
       priceLineVisible: true,
       title: 'AI Forecast'
     });
     mlSeriesRef.current = mlSeries;
+
+    const mlUpperBand = chart.addSeries(LineSeries, {
+      color: 'rgba(16, 185, 129, 0.4)',
+      lineWidth: 1,
+      lineStyle: LineStyle.Dotted,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      title: 'AI Upper'
+    });
+    mlUpperBandRef.current = mlUpperBand;
+
+    const mlLowerBand = chart.addSeries(LineSeries, {
+      color: 'rgba(16, 185, 129, 0.4)',
+      lineWidth: 1,
+      lineStyle: LineStyle.Dotted,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      title: 'AI Lower'
+    });
+    mlLowerBandRef.current = mlLowerBand;
 
     chart.subscribeCrosshairMove((param) => {
       if (
@@ -247,16 +269,47 @@ export const TradingChart: React.FC = () => {
 
     if (indicators.mlForecast && mlSeriesRef.current && mlPrediction && mlPrediction.projectedCandles.length > 0) {
       const lastCandle = candles[candles.length - 1];
+      const projected = mlPrediction.projectedCandles;
+
+      // Calculate standard deviation for bands
+      const recentCandles = candles.slice(-20);
+      const closes = recentCandles.map(c => c.close);
+      const mean = closes.reduce((a, b) => a + b, 0) / closes.length;
+      const variance = closes.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / closes.length;
+      const stdDev = Math.sqrt(variance);
+
       const mlData = [
         { time: lastCandle.time as Time, value: lastCandle.close },
-        ...mlPrediction.projectedCandles.map((p) => ({
+        ...projected.map((p) => ({
           time: p.time as Time,
           value: p.close
         }))
       ];
       mlSeriesRef.current.setData(mlData);
-    } else if (mlSeriesRef.current) {
-      mlSeriesRef.current.setData([]);
+
+      // Upper band (predicted + 1.5 * stdDev)
+      const upperBandData = [
+        { time: lastCandle.time as Time, value: lastCandle.close },
+        ...projected.map((p) => ({
+          time: p.time as Time,
+          value: p.close + stdDev * 1.5
+        }))
+      ];
+      mlUpperBandRef.current?.setData(upperBandData);
+
+      // Lower band (predicted - 1.5 * stdDev)
+      const lowerBandData = [
+        { time: lastCandle.time as Time, value: lastCandle.close },
+        ...projected.map((p) => ({
+          time: p.time as Time,
+          value: p.close - stdDev * 1.5
+        }))
+      ];
+      mlLowerBandRef.current?.setData(lowerBandData);
+    } else {
+      mlSeriesRef.current?.setData([]);
+      mlUpperBandRef.current?.setData([]);
+      mlLowerBandRef.current?.setData([]);
     }
   }, [candles, indicators, mlPrediction]);
 
@@ -271,7 +324,7 @@ export const TradingChart: React.FC = () => {
   const displayCandle = hoveredCandle || lastCandle;
 
   return (
-    <div className="workspace-panel chart-panel">
+    <div className="chart-panel">
       <div className="chart-header-bar">
         <div className="chart-title-group">
           <div>
@@ -400,7 +453,7 @@ export const TradingChart: React.FC = () => {
           <span style={{ color: 'var(--color-text-dim)' }}>L: <strong style={{ color: 'var(--color-red)' }}>{displayCandle.low}</strong></span>
           <span style={{ color: 'var(--color-text-dim)' }}>C: <strong style={{ color: '#fff' }}>{displayCandle.close}</strong></span>
           {displayCandle.volume !== undefined && (
-            <span style={{ color: 'var(--color-text-dim)' }}>Vol: <strong style={{ color: 'var(--color-cyan)' }}>{Math.round(displayCandle.volume)}</strong></span>
+            <span style={{ color: 'var(--color-text-dim)' }}>Vol: <strong style={{ color: 'var(--color-green)' }}>{Math.round(displayCandle.volume)}</strong></span>
           )}
         </div>
       )}

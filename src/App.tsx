@@ -1,25 +1,38 @@
 import React from 'react';
 import { TradingProvider } from './context/TradingContext';
+import { TabProvider, useTab } from './context/TabContext';
 import { Header } from './components/Header';
-import { MarketWatchlist } from './components/MarketWatchlist';
-import { TradingChart } from './components/TradingChart';
-import { OrderBook } from './components/OrderBook';
-import { MLPredictorConsole } from './components/MLPredictorConsole';
-import { PositionsOrdersPanel } from './components/PositionsOrdersPanel';
+import { TabNavigation } from './components/TabNavigation';
+import { SymbolsPage } from './pages/SymbolsPage';
+import { ChartsPage } from './pages/ChartsPage';
+import { ScannerPage } from './pages/ScannerPage';
+import { CrawlrPage } from './pages/CrawlrPage';
 import { ToastContainer } from './components/ToastContainer';
 
-export const AppContent: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { activeTab, setActiveTab } = useTab();
+
+  const renderPage = () => {
+    switch (activeTab) {
+      case 'symbols':
+        return <SymbolsPage />;
+      case 'charts':
+        return <ChartsPage />;
+      case 'scanner':
+        return <ScannerPage />;
+      case 'crawlr':
+        return <CrawlrPage />;
+      default:
+        return <SymbolsPage />;
+    }
+  };
+
   return (
     <div className="cryptrader-app">
       <Header />
+      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       <main className="trading-workspace">
-        <MarketWatchlist />
-        <TradingChart />
-        <PositionsOrdersPanel />
-        <div className="workspace-panel right-panel">
-          <OrderBook />
-          <MLPredictorConsole />
-        </div>
+        {renderPage()}
       </main>
       <ToastContainer />
     </div>
@@ -29,7 +42,9 @@ export const AppContent: React.FC = () => {
 export default function App() {
   return (
     <TradingProvider>
-      <AppContent />
+      <TabProvider>
+        <AppContent />
+      </TabProvider>
     </TradingProvider>
   );
 }
